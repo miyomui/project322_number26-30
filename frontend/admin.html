@@ -173,78 +173,8 @@
           </div>
         </div>
       </div>
-    </div> <!-- Close main grid here -->
-      
-    <!-- Analytics Section (Full Width) -->
-    <div class="max-w-6xl mx-auto mt-8" id="analyticsSection" style="display: none;">
-      <div class="flex justify-between items-end mb-6">
-        <h2 class="text-xl font-medium text-warm-textDark flex items-center gap-2">
-          <span>📊</span> Model Insights & Analytics
-        </h2>
-        <button id="btnEvaluate" onclick="evaluateModel()" class="bg-warm-textDark text-white px-5 py-2 rounded-xl text-sm font-medium hover:bg-warm-text transition flex items-center gap-2">
-          <span id="evalIcon">🔄</span> <span id="evalText">Evaluate Model</span>
-        </button>
-      </div>
-      
-      <div class="grid lg:grid-cols-2 gap-10" id="analyticsContent" style="display: none;">
-        
-        <!-- Cross-Validation / Performance -->
-        <div class="bg-white rounded-[2rem] shadow-soft p-8 border border-warm-border">
-          <h3 class="text-md font-medium text-warm-textDark mb-4">Model Performance (on Dataset)</h3>
-          
-          <div class="flex items-end gap-4 mb-8">
-            <div class="text-6xl font-chakra font-semibold text-warm-orange"><span id="valAccuracy">0.0</span><span class="text-3xl text-warm-text">%</span></div>
-            <div class="pb-2 text-base text-warm-text font-medium">Accuracy</div>
-          </div>
-          
-          <div class="space-y-6">
-            <div>
-              <div class="flex justify-between text-sm text-warm-text mb-1.5">
-                <span>Precision (Macro)</span><span class="font-chakra" id="valPrecision">0.0%</span>
-              </div>
-              <div class="w-full h-2 bg-warm-bg rounded-full overflow-hidden"><div id="barPrecision" class="h-full bg-warm-paper w-[0%] transition-all duration-1000"></div></div>
-            </div>
-            <div>
-              <div class="flex justify-between text-sm text-warm-text mb-1.5">
-                <span>Recall (Macro)</span><span class="font-chakra" id="valRecall">0.0%</span>
-              </div>
-              <div class="w-full h-2 bg-warm-bg rounded-full overflow-hidden"><div id="barRecall" class="h-full bg-warm-paper w-[0%] transition-all duration-1000"></div></div>
-            </div>
-            <div>
-              <div class="flex justify-between text-sm text-warm-text mb-1.5">
-                <span>F1-Score (Macro)</span><span class="font-chakra" id="valF1">0.0%</span>
-              </div>
-              <div class="w-full h-2 bg-warm-bg rounded-full overflow-hidden"><div id="barF1" class="h-full bg-warm-paper w-[0%] transition-all duration-1000"></div></div>
-            </div>
-          </div>
-          
-          <p class="mt-8 text-sm text-warm-text leading-relaxed bg-warm-bg p-5 rounded-2xl border border-warm-paper">
-            <strong>ข้อมูลอ้างอิง:</strong> ประเมินผลสดจากรูปภาพทั้งหมด <span id="valTotalImages" class="font-medium text-warm-textDark">0</span> รูป ในโฟลเดอร์ Dataset (เลข ๒๖-๓๐)
-          </p>
-        </div>
+    </main>
 
-        <!-- Error Analysis -->
-        <div class="bg-white rounded-[2rem] shadow-soft p-8 border border-warm-border flex flex-col">
-          <h3 class="text-md font-medium text-warm-textDark mb-4 flex justify-between items-center">
-            <span>Error Analysis (Confused Classes)</span>
-            <span class="text-xs bg-red-50 text-red-600 px-3 py-1.5 rounded-lg border border-red-100 font-medium">Top Errors</span>
-          </h3>
-          
-          <p class="text-sm text-warm-text mb-8">ทายผิดทั้งหมด <span id="valTotalErrors" class="font-medium text-red-500">0</span> ครั้ง นี่คือคู่ตัวเลขที่โมเดลสับสนมากที่สุด</p>
-          
-          <div class="flex flex-col gap-6 flex-grow" id="errorCardsContainer">
-            <!-- Dynamically populated -->
-          </div>
-          
-          <div id="noErrorsMsg" class="hidden text-center py-10">
-            <span class="text-4xl">🎉</span>
-            <p class="text-base text-warm-text mt-3 font-medium">สุดยอด! โมเดลทำนายได้ถูกต้อง 100%</p>
-          </div>
-        </div>
-
-      </div>
-    </div>
-  </main>
 
   <!-- Toast Container -->
   <div class="fixed bottom-6 right-6 z-50 flex flex-col gap-2" id="toastContainer"></div>

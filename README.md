@@ -12,9 +12,7 @@
 
 ### 1. ระบบจัดการโมเดลหลังบ้าน (Admin Dashboard)
 - **Hot-Reloading:** รองรับการอัปโหลดไฟล์โมเดล (`.keras`, `.h5`) และสลับการใช้งานโมเดลได้ทันทีโดยไม่ต้อง Restart Server
-- **Real-time Evaluation:** มีระบบประเมินผลโมเดล (Accuracy, Precision, Recall, F1-Score) แบบเรียลไทม์ โดยใช้ Dataset ของจริงในโฟลเดอร์
-- **Error Analysis:** ระบบแสดงผลคลาสที่โมเดลสับสนมากที่สุดจาก Confusion Matrix
-- **In-Memory Caching:** ประมวลผลรูปภาพ 2,500+ รูป ได้ภายในไม่ถึง 1 วินาที!
+- **Model Management:** ดูรายการโมเดลทั้งหมดในระบบ, สลับโมเดลที่ใช้งาน, และลบโมเดลที่ไม่ต้องการได้
 
 ### 2. ระบบทำนายตัวเลข (User Page)
 - **Interactive Canvas:** กระดานวาดรูปบนเว็บที่รองรับทั้งเมาส์และการสัมผัสบนมือถือ/แท็บเล็ต
@@ -42,7 +40,6 @@ project_aie322/
 │   ├── user.html             # หน้าเว็บสำหรับผู้ใช้งาน (วาดรูปทำนาย)
 │   └── admin.html            # หน้าเว็บ Dashboard สำหรับแอดมิน
 │
-├── dataset/                  # โฟลเดอร์เก็บรูปภาพสำหรับทดสอบและเทรน (26, 27, 28, 29, 30)
 ├── model/                    # โฟลเดอร์เก็บไฟล์โมเดล
 └── requirements.txt          # ไฟล์รายชื่อไลบรารีที่จำเป็นสำหรับ Deploy
 ```
@@ -69,8 +66,14 @@ project_aie322/
    cd data_collection
    python app.py
    ```
-   เข้าไปที่ `http://127.0.0.1:5000/` (พอร์ตอาจจะเปลี่ยนเป็น 5001 หากเซิร์ฟเวอร์หลักรันอยู่)
 
+---
 
+## ☁️ การ Deploy บน Render
 
-
+1. อัปโหลดโค้ดขึ้น GitHub
+2. สมัครใช้งาน [render.com](https://render.com/) แล้วสร้าง **Web Service** ใหม่
+3. ตั้งค่าดังนี้:
+   - **Build Command:** `pip install --upgrade pip && pip install -r requirements.txt`
+   - **Start Command:** `gunicorn backend.app:app --bind 0.0.0.0:$PORT`
+   - **Environment Variable:** `PYTHON_VERSION` = `3.11.9`

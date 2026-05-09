@@ -8,7 +8,7 @@ from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
 from werkzeug.utils import secure_filename
 from datetime import datetime
-from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, confusion_matrix
+
 
 # Initialize Flask App
 app = Flask(__name__, static_folder='../frontend', template_folder='../frontend')
@@ -217,105 +217,7 @@ def delete_model():
         except Exception as e:
             return jsonify({"error": str(e)}), 500
             
-# Cache for dataset to speed up evaluation
-cached_x_data = None
-cached_true_labels = None
 
-@app.route('/api/evaluate', methods=['GET'])
-def evaluate():
-    if global_model is None:
-        return jsonify({"error": "No model loaded"}), 500
-
-    global cached_x_data, cached_true_labels
-    
-    classes = ['26', '27', '28', '29', '30']
-    thai_map = {'26': '๒๖', '27': '๒๗', '28': '๒๘', '29': '๒๙', '30': '๓๐'}
-
-    # Load dataset if not cached
-    if cached_x_data is None:
-        dataset_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '../dataset'))
-        if not os.path.exists(dataset_dir):
-            return jsonify({"error": "Dataset folder not found"}), 404
-
-        true_labels = []
-        images = []
-        import PIL.ImageOps
-        
-        try:
-            for cls_name in classes:
-                cls_dir = os.path.join(dataset_dir, cls_name)
-                if not os.path.exists(cls_dir):
-                    continue
-                    
-                for filename in os.listdir(cls_dir):
-                    if filename.endswith(('.png', '.jpg', '.jpeg')):
-                        file_path = os.path.join(cls_dir, filename)
-                        image = Image.open(file_path).convert('L')
-                        image = PIL.ImageOps.invert(image)
-                        image = image.resize((64, 64), Image.LANCZOS)
-                        img_array = np.array(image, dtype=np.float32)
-                        
-                        images.append(img_array)
-                        true_labels.append(classes.index(cls_name))
-            
-            if not images:
-                return jsonify({"error": "No images found in dataset"}), 400
-
-            cached_x_data = np.array(images).reshape(-1, 64, 64, 1)
-            cached_true_labels = true_labels
-        except Exception as e:
-            print("Dataset loading error:", e)
-            return jsonify({"error": str(e)}), 500
-
-    try:
-        # Predict using cached data
-        predictions = global_model.predict(cached_x_data, batch_size=32)
-        pred_indices = np.argmax(predictions, axis=1)
-        
-        acc = accuracy_score(cached_true_labels, pred_indices)
-        precision = precision_score(cached_true_labels, pred_indices, average='macro', zero_division=0)
-        recall = recall_score(cached_true_labels, pred_indices, average='macro', zero_division=0)
-        f1 = f1_score(cached_true_labels, pred_indices, average='macro', zero_division=0)
-        
-        cm = confusion_matrix(cached_true_labels, pred_indices)
-        
-        np.fill_diagonal(cm, 0)
-        top_errors = []
-        if cm.sum() > 0:
-            flat_indices = np.argsort(cm.flatten())[::-1]
-            total_errors = cm.sum()
-            
-            for i in range(2):
-                idx = flat_indices[i]
-                err_count = cm.flatten()[idx]
-                if err_count == 0:
-                    break
-                    
-                true_c = idx // len(classes)
-                pred_c = idx % len(classes)
-                
-                percentage = (err_count / total_errors) * 100
-                
-                top_errors.append({
-                    "true_class": thai_map[classes[true_c]],
-                    "pred_class": thai_map[classes[pred_c]],
-                    "percentage": round(percentage, 1),
-                    "count": int(err_count)
-                })
-
-        return jsonify({
-            "accuracy": round(acc * 100, 1),
-            "precision": round(precision * 100, 1),
-            "recall": round(recall * 100, 1),
-            "f1_score": round(f1 * 100, 1),
-            "total_images": len(cached_x_data),
-            "total_errors": int(cm.sum()),
-            "top_errors": top_errors
-        })
-
-    except Exception as e:
-        print("Evaluation error:", e)
-        return jsonify({"error": str(e)}), 500
 
 if __name__ == '__main__':
     app.run(debug=True, port=5000)
