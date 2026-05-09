@@ -286,6 +286,7 @@
     
     let isDrawing = false;
     let lastX = 0, lastY = 0;
+    let hasDrawn = false; // track if canvas has any drawing
 
     function getPos(e) {
       const rect = canvas.getBoundingClientRect();
@@ -297,6 +298,7 @@
 
     function startDraw(e) {
       isDrawing = true;
+      hasDrawn = true; // user started drawing
       const pos = getPos(e);
       lastX = pos.x;
       lastY = pos.y;
@@ -378,7 +380,8 @@
     // --- Action Buttons ---
     function clearCanvas(){ 
       ctx.fillStyle = '#ffffff';
-      ctx.fillRect(0,0,canvas.width,canvas.height); 
+      ctx.fillRect(0,0,canvas.width,canvas.height);
+      hasDrawn = false; // reset drawing flag
       
       const predEl = document.getElementById('prediction');
       predEl.style.opacity = '0';
@@ -392,6 +395,23 @@
     }
 
     async function predict(){ 
+      // Block if canvas is blank
+      if (!hasDrawn) {
+        const canvasEl = document.getElementById('drawCanvas');
+        canvasEl.style.transition = 'transform 0.1s ease';
+        const shake = [0, -8, 8, -6, 6, -3, 3, 0];
+        let i = 0;
+        const shakeInterval = setInterval(() => {
+          canvasEl.style.transform = `translateX(${shake[i]}px)`;
+          i++;
+          if (i >= shake.length) {
+            clearInterval(shakeInterval);
+            canvasEl.style.transform = '';
+          }
+        }, 50);
+        return;
+      }
+
       const dataURL = canvas.toDataURL('image/png');
       const btn = document.getElementById('predictBtn');
       const originalHtml = btn.innerHTML;
