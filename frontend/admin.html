@@ -425,82 +425,8 @@
       `).join('');
     }
 
-    // ─── Evaluation Logic ─────────────────────
-    async function evaluateModel() {
-      const btn = document.getElementById('btnEvaluate');
-      const icon = document.getElementById('evalIcon');
-      const text = document.getElementById('evalText');
-      const content = document.getElementById('analyticsContent');
-      
-      btn.disabled = true;
-      icon.innerHTML = '<span class="inline-block animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-white"></span>';
-      text.textContent = 'กำลังตรวจข้อสอบ (รอประมาณ 2-5 วิ)...';
-      content.style.display = 'none';
 
-      try {
-        const response = await fetch('/api/evaluate');
-        const data = await response.json();
-        
-        if (response.ok) {
-          content.style.display = 'grid';
-          
-          document.getElementById('valAccuracy').textContent = data.accuracy;
-          document.getElementById('valPrecision').textContent = data.precision + '%';
-          document.getElementById('valRecall').textContent = data.recall + '%';
-          document.getElementById('valF1').textContent = data.f1_score + '%';
-          document.getElementById('valTotalImages').textContent = data.total_images;
-          document.getElementById('valTotalErrors').textContent = data.total_errors;
-          
-          setTimeout(() => {
-            document.getElementById('barPrecision').style.width = data.precision + '%';
-            document.getElementById('barRecall').style.width = data.recall + '%';
-            document.getElementById('barF1').style.width = data.f1_score + '%';
-          }, 100);
 
-          const errContainer = document.getElementById('errorCardsContainer');
-          const noErrMsg = document.getElementById('noErrorsMsg');
-          
-          errContainer.innerHTML = '';
-          if (data.top_errors && data.top_errors.length > 0) {
-            noErrMsg.classList.add('hidden');
-            
-            data.top_errors.forEach(err => {
-              errContainer.innerHTML += `
-                <div class="flex items-center gap-6 p-6 border border-warm-paper rounded-2xl bg-warm-bg">
-                  <div class="flex flex-col items-center">
-                    <div class="w-16 h-16 bg-white rounded-xl flex items-center justify-center font-chakra text-3xl text-warm-textDark shadow-sm">${err.true_class}</div>
-                    <span class="text-[11px] font-medium text-warm-text mt-2">Actual Class</span>
-                  </div>
-                  
-                  <div class="flex-grow flex flex-col items-center relative min-w-0">
-                    <div class="w-full h-px bg-warm-paper absolute top-1/2 -translate-y-1/2"></div>
-                    <span class="bg-warm-bg px-3 text-xs text-warm-orange z-10 font-semibold tracking-wide">Confused With</span>
-                    <span class="text-[11px] text-warm-text mt-2 text-center bg-white px-3 py-1 rounded-full border border-warm-paper shadow-sm">ทายผิด ${err.count} ครั้ง (${err.percentage}%)</span>
-                  </div>
-                  
-                  <div class="flex flex-col items-center">
-                    <div class="w-16 h-16 bg-white rounded-xl flex items-center justify-center font-chakra text-3xl text-red-500 shadow-sm border border-red-100">${err.pred_class}</div>
-                    <span class="text-[11px] font-medium text-red-500 mt-2">Predicted As</span>
-                  </div>
-                </div>
-              `;
-            });
-          } else {
-            noErrMsg.classList.remove('hidden');
-          }
-          
-          showToast('success', 'ประเมินผลสำเร็จ!');
-        } else {
-          showToast('error', `ข้อผิดพลาด: ${data.error}`);
-        }
-      } catch (e) {
-        showToast('error', `เกิดข้อผิดพลาดในการเชื่อมต่อ: ${e}`);
-      } finally {
-        btn.disabled = false;
-        icon.textContent = '🔄';
-        text.textContent = 'รันการประเมินผลใหม่';
-      }
-    }
 
     // ─── Init ─────────────────────────────────
     fetchModels();
