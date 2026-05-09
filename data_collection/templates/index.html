@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>เก็บข้อมูลเลขไทย ๒๖-๓๐</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Mitr:wght@300;400;500&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Mitr', sans-serif;
+            background-color: #f8fafc;
+        }
+
+        #drawingCanvas {
+            border: 2px dashed #cbd5e1;
+            background-color: white;
+            border-radius: 8px;
+            cursor: crosshair;
+            touch-action: none;
+        }
+    </style>
+</head>
+
+<body class="min-h-screen flex flex-col items-center">
+
+    <nav class="bg-white shadow-sm border-b sticky top-0 z-50 w-full">
+        <div class="max-w-5xl mx-auto px-4 py-3 flex justify-between items-center">
+            <h1 class="text-xl font-medium text-gray-800">✍️ Thai Digits Collector (๒๖-๓๐)</h1>
+            <span class="text-sm text-gray-500">AIE322 Project</span>
+        </div>
+    </nav>
+
+    <main class="flex-grow flex flex-col items-center w-full py-8 px-4">
+
+        <!-- ส่วนเลือก Label และแสดงจำนวน -->
+        <div class="bg-white p-6 rounded-xl shadow-sm border w-full max-w-md mb-6">
+            <div class="flex justify-between items-end mb-3">
+                <h2 class="text-lg font-medium text-gray-700">1. เลือกว่าจะเขียนเลขอะไร:</h2>
+                <span id="totalCount" class="text-sm font-medium text-blue-600 bg-blue-50 px-2 py-1 rounded-md">รวม: 0
+                    รูป</span>
+            </div>
+
+            <div class="flex justify-between gap-2">
+                <label class="flex-1 text-center cursor-pointer">
+                    <input type="radio" name="digitLabel" value="26" class="peer sr-only" checked>
+                    <div
+                        class="p-2 border rounded-lg peer-checked:bg-blue-500 peer-checked:text-white peer-checked:border-blue-500 transition-colors flex flex-col items-center">
+                        <span class="text-lg">๒๖</span>
+                        <span id="count-26" class="text-[10px] text-gray-400 peer-checked:text-blue-100 mt-1">0
+                            รูป</span>
+                    </div>
+                </label>
+                <label class="flex-1 text-center cursor-pointer">
+                    <input type="radio" name="digitLabel" value="27" class="peer sr-only">
+                    <div
+                        class="p-2 border rounded-lg peer-checked:bg-blue-500 peer-checked:text-white peer-checked:border-blue-500 transition-colors flex flex-col items-center">
+                        <span class="text-lg">๒๗</span>
+                        <span id="count-27" class="text-[10px] text-gray-400 peer-checked:text-blue-100 mt-1">0
+                            รูป</span>
+                    </div>
+                </label>
+                <label class="flex-1 text-center cursor-pointer">
+                    <input type="radio" name="digitLabel" value="28" class="peer sr-only">
+                    <div
+                        class="p-2 border rounded-lg peer-checked:bg-blue-500 peer-checked:text-white peer-checked:border-blue-500 transition-colors flex flex-col items-center">
+                        <span class="text-lg">๒๘</span>
+                        <span id="count-28" class="text-[10px] text-gray-400 peer-checked:text-blue-100 mt-1">0
+                            รูป</span>
+                    </div>
+                </label>
+                <label class="flex-1 text-center cursor-pointer">
+                    <input type="radio" name="digitLabel" value="29" class="peer sr-only">
+                    <div
+                        class="p-2 border rounded-lg peer-checked:bg-blue-500 peer-checked:text-white peer-checked:border-blue-500 transition-colors flex flex-col items-center">
+                        <span class="text-lg">๒๙</span>
+                        <span id="count-29" class="text-[10px] text-gray-400 peer-checked:text-blue-100 mt-1">0
+                            รูป</span>
+                    </div>
+                </label>
+                <label class="flex-1 text-center cursor-pointer">
+                    <input type="radio" name="digitLabel" value="30" class="peer sr-only">
+                    <div
+                        class="p-2 border rounded-lg peer-checked:bg-blue-500 peer-checked:text-white peer-checked:border-blue-500 transition-colors flex flex-col items-center">
+                        <span class="text-lg">๓๐</span>
+                        <span id="count-30" class="text-[10px] text-gray-400 peer-checked:text-blue-100 mt-1">0
+                            รูป</span>
+                    </div>
+                </label>
+            </div>
+        </div>
+
+        <!-- ส่วน Canvas สำหรับเขียน -->
+        <div class="bg-white p-6 rounded-xl shadow-sm border w-full max-w-md flex flex-col items-center mb-6">
+            <h2 class="text-lg font-medium mb-3 text-gray-700 w-full text-left">2. เขียนตัวเลขลงในกรอบ:</h2>
+            <canvas id="drawingCanvas" width="280" height="140" class="mb-4"></canvas>
+
+            <div class="w-full mb-5 px-2">
+                <label for="penSize" class="block text-sm font-medium text-gray-700 mb-1">
+                    ขนาดปากกา: <span id="penSizeValue">10</span> px
+                </label>
+                <input type="range" id="penSize" min="2" max="30" value="10"
+                    class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
+            </div>
+
+            <div class="flex w-full gap-4">
+                <button id="clearBtn"
+                    class="flex-1 py-2 px-4 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-medium transition-colors">ล้าง
+                    (Clear)</button>
+                <button id="saveBtn"
+                    class="flex-1 py-2 px-4 bg-gray-800 hover:bg-gray-900 text-white rounded-lg font-medium transition-colors shadow-md">บันทึก
+                    (Save)</button>
+            </div>
+            <p id="statusText" class="text-green-600 text-sm mt-3 hidden">บันทึกสำเร็จ!</p>
+        </div>
+
+        <!-- 🌟 แกลเลอรีรูปล่าสุด 🌟 -->
+        <div class="bg-white p-6 rounded-xl shadow-sm border w-full max-w-md">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-lg font-medium text-gray-700">🖼️ รูปล่าสุด (สามารถลบได้)</h2>
+            </div>
+            <div id="galleryContainer" class="grid grid-cols-5 gap-2">
+                <p class="col-span-5 text-center text-sm text-gray-400">กำลังโหลด...</p>
+            </div>
+        </div>
+
+    </main>
+
+    <script>
+        // --- ส่วนจัดการตัวเลขและแกลเลอรี ---
+        function updateCountsOnScreen(counts) {
+            let total = 0;
+            for (const [label, count] of Object.entries(counts)) {
+                const countElem = document.getElementById(`count-${label}`);
+                if (countElem) countElem.textContent = `${count} รูป`;
+                total += count;
+            }
+            document.getElementById('totalCount').textContent = `รวม: ${total} รูป`;
+        }
+
+        // 🌟 ดึงรูปล่าสุดมาแสดง 🌟
+        function loadRecentImages() {
+            fetch('/get_recent')
+                .then(res => res.json())
+                .then(data => {
+                    const container = document.getElementById('galleryContainer');
+                    container.innerHTML = '';
+
+                    if (data.length === 0) {
+                        container.innerHTML = '<p class="col-span-5 text-center text-sm text-gray-400">ยังไม่มีรูปภาพ</p>';
+                        return;
+                    }
+
+                    data.forEach(img => {
+                        const item = document.createElement('div');
+                        item.className = 'flex flex-col items-center gap-1';
+                        item.innerHTML = `
+                        <div class="border rounded bg-gray-50 overflow-hidden w-full aspect-square flex items-center justify-center relative group">
+                            <img src="${img.url}" class="w-full h-full object-contain mix-blend-multiply pointer-events-none">
+                            <!-- ปุ่มลบจะโผล่มาตอนเอาเมาส์ชี้ -->
+                            <div class="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer" onclick="deleteImage('${img.label}', '${img.filename}')">
+                                <span class="bg-red-500 text-white p-1.5 rounded-full shadow hover:bg-red-600">🗑️</span>
+                            </div>
+                        </div>
+                        <span class="text-[10px] text-gray-500 font-medium">เลข ${img.label}</span>
+                    `;
+                        container.appendChild(item);
+                    });
+                });
+        }
+
+        // 🌟 คำสั่งตอนกดปุ่มถังขยะลบรูป 🌟
+        function deleteImage(label, filename) {
+            if (confirm(`ต้องการลบรูปเลข ${label} นี้ใช่ไหม?`)) {
+                fetch('/delete_image', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ label, filename })
+                })
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.status === 'success') {
+                            if (data.counts) updateCountsOnScreen(data.counts);
+                            loadRecentImages(); // รีเฟรชแกลเลอรี
+                        }
+                    });
+            }
+        }
+
+        window.addEventListener('DOMContentLoaded', () => {
+            fetch('/get_stats')
+                .then(res => res.json())
+                .then(data => updateCountsOnScreen(data));
+            loadRecentImages(); // โหลดรูปตอนเปิดเว็บ
+        });
+
+        // --- ส่วนวาดรูป (มีดักหน้าว่าง) ---
+        const canvas = document.getElementById('drawingCanvas');
+        const ctx = canvas.getContext('2d');
+        let isDrawing = false;
+        let hasDrawn = false; // ตัวแปรเช็คหน้าว่าง
+
+        ctx.lineWidth = 10;
+        ctx.lineCap = 'round';
+        ctx.strokeStyle = '#000000';
+
+        function fillWhiteBackground() {
+            ctx.fillStyle = "white";
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+        }
+        fillWhiteBackground();
+
+        const penSizeInput = document.getElementById('penSize');
+        const penSizeValue = document.getElementById('penSizeValue');
+        penSizeInput.addEventListener('input', function () {
+            penSizeValue.textContent = this.value;
+            ctx.lineWidth = this.value;
+        });
+
+        function startPosition(e) {
+            isDrawing = true;
+            draw(e);
+        }
+
+        function endPosition() {
+            isDrawing = false;
+            ctx.beginPath();
+        }
+
+        function draw(e) {
+            if (!isDrawing) return;
+            e.preventDefault();
+            hasDrawn = true; // บันทึกว่าวาดแล้ว
+
+            const rect = canvas.getBoundingClientRect();
+            const clientX = e.clientX || (e.touches && e.touches[0].clientX);
+            const clientY = e.clientY || (e.touches && e.touches[0].clientY);
+
+            if (clientX === undefined || clientY === undefined) return;
+
+            const x = clientX - rect.left;
+            const y = clientY - rect.top;
+
+            ctx.lineTo(x, y);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(x, y);
+        }
+
+        canvas.addEventListener('mousedown', startPosition);
+        canvas.addEventListener('mouseup', endPosition);
+        canvas.addEventListener('mousemove', draw);
+        canvas.addEventListener('touchstart', startPosition, { passive: false });
+        canvas.addEventListener('touchend', endPosition);
+        canvas.addEventListener('touchmove', draw, { passive: false });
+
+        document.getElementById('clearBtn').addEventListener('click', () => {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            fillWhiteBackground();
+            hasDrawn = false;
+        });
+
+        // --- ปุ่มบันทึก ---
+        document.getElementById('saveBtn').addEventListener('click', () => {
+            if (!hasDrawn) {
+                alert("⚠️ ยังไม่ได้เขียนเลยจ้าาาา อย่าเกียนอิหล่า");
+                return;
+            }
+
+            const selectedLabel = document.querySelector('input[name="digitLabel"]:checked').value;
+            const dataURL = canvas.toDataURL('image/png');
+            const statusText = document.getElementById('statusText');
+
+            fetch('/save_image', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ image: dataURL, label: selectedLabel })
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === "success") {
+                        statusText.classList.remove('hidden');
+                        setTimeout(() => statusText.classList.add('hidden'), 1500);
+
+                        ctx.clearRect(0, 0, canvas.width, canvas.height);
+                        fillWhiteBackground();
+                        hasDrawn = false;
+
+                        if (data.counts) updateCountsOnScreen(data.counts);
+                        loadRecentImages(); // 🌟 เซฟเสร็จแล้วอัปเดตแกลเลอรีทันที 🌟
+                    }
+                })
+                .catch(error => {
+                    alert("เกิดข้อผิดพลาดในการบันทึก");
+                    console.error(error);
+                });
+        });
+    </script>
+</body>
+
+</html>

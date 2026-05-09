@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>จัดการโมเดล | Admin Page</title>
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@300;400;500;600&family=Mitr:wght@300;400;500&display=swap" rel="stylesheet">
+  
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            warm: {
+              bg: '#FDF8F0',       
+              paper: '#E3CDBA',    
+              text: '#7A6452',     
+              textDark: '#5C4738', 
+              orange: '#D28E6A',   
+              orangeHover: '#c47d59',
+              shadow: '#C8B09C',
+              border: '#f0e6dd'
+            }
+          },
+          fontFamily: {
+            mitr: ['Mitr', 'sans-serif'],
+            chakra: ['"Chakra Petch"', 'sans-serif'],
+          },
+          boxShadow: {
+            'soft': '0 8px 30px rgba(92, 71, 56, 0.08)',
+            'inner-soft': 'inset 0 2px 10px rgba(92, 71, 56, 0.05)'
+          }
+        }
+      }
+    }
+  </script>
+  
+  <style>
+    .hide-scrollbar::-webkit-scrollbar { display: none; }
+    .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    
+    .nav-link { transition: all 0.2s ease; }
+    .nav-link-active { background: #D28E6A; color: white; box-shadow: 0 2px 6px rgba(210, 142, 106, 0.3); border: 1px solid #D28E6A; }
+    .nav-link-inactive { background: white; color: #7A6452; border: 1px solid #E3CDBA; }
+    .nav-link-inactive:hover { background: #fdf5f0; border-color: #D28E6A; color: #D28E6A; }
+
+    /* Upload Zone */
+    .upload-zone { transition: all 0.2s ease; border: 2px dashed #C8B09C; }
+    .upload-zone:hover, .upload-zone.dragover { border-color: #D28E6A; background-color: #fff9f5; transform: translateY(-2px); }
+    
+    /* Model Item */
+    .model-item { transition: all 0.2s ease; }
+    .model-item:hover { border-color: #D28E6A; background-color: #fff9f5; transform: translateX(4px); }
+    .model-item.active { border-color: #D28E6A; background-color: #FDF8F0; box-shadow: 0 4px 14px rgba(210, 142, 106, 0.15); }
+    
+    /* Toast */
+    .toast { transform: translateY(20px); opacity: 0; transition: all 0.3s ease; }
+    .toast.show { transform: translateY(0); opacity: 1; }
+  </style>
+</head>
+<body class="font-mitr bg-warm-bg text-warm-textDark min-h-screen flex flex-col">
+
+  <!-- Header Section -->
+  <header class="pt-10 pb-6 px-6 shrink-0">
+    <div class="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-center gap-6 border-b border-warm-paper pb-6">
+      <div class="text-center md:text-left">
+        <h1 class="text-2xl md:text-3xl font-medium text-warm-textDark mb-1">ระบบทำนายตัวเลขไทยจากลายมือ</h1>
+        <p class="text-warm-text font-light text-sm md:text-base">จัดการ ML Model สำหรับระบบจดจำเลขไทย (Admin)</p>
+      </div>
+      
+      <nav class="flex gap-3 shrink-0">
+        <a href="/" class="nav-link nav-link-inactive px-6 py-2.5 rounded-full text-sm font-medium">User Page</a>
+        <a href="/admin" class="nav-link nav-link-active px-6 py-2.5 rounded-full text-sm font-medium">Admin Page</a>
+      </nav>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main class="flex-grow p-6">
+    <div class="max-w-6xl mx-auto grid lg:grid-cols-[1fr_1.2fr] gap-8">
+      
+      <!-- Left Column: Upload & Current Model -->
+      <div class="flex flex-col gap-8">
+        
+        <!-- Upload Card -->
+        <div class="bg-white rounded-[2rem] shadow-soft p-8 border border-warm-border">
+          <div class="flex items-center gap-3 mb-6">
+            <div class="w-10 h-10 rounded-xl bg-warm-bg flex items-center justify-center text-warm-orange text-xl">📤</div>
+            <div>
+              <h2 class="text-lg font-medium text-warm-textDark">อัปโหลด Model ใหม่</h2>
+              <p class="text-sm text-warm-text">รองรับไฟล์ .keras, .h5, .pkl, .pt</p>
+            </div>
+          </div>
+
+          <div class="upload-zone relative rounded-2xl p-8 text-center cursor-pointer bg-white mb-4" id="uploadZone">
+            <input type="file" id="modelFile" accept=".keras,.h5,.pkl,.pt,.joblib" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer" onchange="handleFileSelect(event)">
+            <div class="text-4xl mb-3">📂</div>
+            <h3 class="text-base font-medium text-warm-textDark mb-1">ลากไฟล์มาวางที่นี่ หรือคลิกเพื่อเลือก</h3>
+            <p class="text-sm text-warm-text mb-4">เลือกไฟล์โมเดลที่ต้องการอัปโหลด</p>
+            <div class="flex gap-2 justify-center flex-wrap">
+              <span class="text-[11px] font-medium px-3 py-1 rounded-full bg-warm-bg text-warm-textDark tracking-wider">.KERAS</span>
+              <span class="text-[11px] font-medium px-3 py-1 rounded-full bg-warm-bg text-warm-textDark tracking-wider">.H5</span>
+              <span class="text-[11px] font-medium px-3 py-1 rounded-full bg-warm-bg text-warm-textDark tracking-wider">.PKL</span>
+            </div>
+          </div>
+
+          <!-- File Preview -->
+          <div id="filePreview" class="hidden items-center gap-4 bg-warm-bg rounded-xl p-4 border border-warm-paper mb-4">
+            <div class="w-10 h-10 bg-warm-textDark rounded-lg flex items-center justify-center text-white shrink-0">📦</div>
+            <div class="flex-grow min-w-0">
+              <div class="font-medium text-sm text-warm-textDark truncate" id="previewName">—</div>
+              <div class="text-xs text-warm-text mt-0.5" id="previewSize">—</div>
+            </div>
+            <button onclick="removeFile()" class="text-warm-text hover:text-red-500 p-2 transition">✕</button>
+          </div>
+
+          <!-- Progress -->
+          <div id="progressWrap" class="hidden mb-4">
+            <div class="w-full h-2 bg-warm-paper rounded-full overflow-hidden">
+              <div id="progressFill" class="h-full bg-warm-orange w-0 transition-all duration-300"></div>
+            </div>
+          </div>
+
+          <!-- Actions -->
+          <div class="flex gap-3">
+            <button id="uploadBtn" onclick="confirmUpload()" disabled class="flex-1 bg-warm-textDark hover:bg-warm-text text-white py-3 rounded-xl font-medium transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-sm">
+              <span id="uploadBtnIcon">✅</span>
+              <span id="uploadBtnText">ยืนยันการอัปโหลด</span>
+            </button>
+            <button onclick="removeFile()" class="px-6 bg-white border border-warm-paper text-warm-text hover:bg-warm-bg py-3 rounded-xl font-medium transition">ยกเลิก</button>
+          </div>
+
+          <!-- Feature Highlight -->
+          <div class="mt-6 bg-gradient-to-r from-[#fdf6ee] to-[#faf0e4] border-l-4 border-warm-orange rounded-r-xl p-4 text-sm text-warm-text leading-relaxed">
+            <strong class="text-warm-textDark">💡 Hot Reload:</strong> เมื่ออัปโหลดสำเร็จ ระบบจะสลับไปใช้โมเดลใหม่ทันทีโดย<strong class="text-warm-orange">ไม่ต้อง Restart Server</strong> 
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Right Column: Model List -->
+      <div class="bg-white rounded-[2rem] shadow-soft p-8 border border-warm-border flex flex-col h-full max-h-[600px]">
+        <div class="flex items-center gap-3 mb-6 shrink-0">
+          <div class="w-10 h-10 rounded-xl bg-warm-bg flex items-center justify-center text-warm-orange text-xl">📋</div>
+          <div>
+            <h2 class="text-lg font-medium text-warm-textDark">รายการ Model ทั้งหมด</h2>
+            <p class="text-sm text-warm-text">เลือก "ใช้งาน" เพื่อสลับโมเดล</p>
+          </div>
+        </div>
+
+        <!-- Current Model Banner -->
+        <div class="flex items-center gap-4 p-4 bg-warm-bg rounded-2xl border border-warm-paper mb-6 shrink-0">
+          <div class="relative flex h-3 w-3 shrink-0">
+            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+            <span class="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span>
+          </div>
+          <div>
+            <div class="text-xs text-warm-text font-medium mb-0.5">กำลังใช้งานอยู่ (Active)</div>
+            <div class="text-sm font-semibold text-warm-textDark" id="currentModelName">กำลังโหลด...</div>
+          </div>
+        </div>
+
+        <!-- List -->
+        <div id="modelList" class="flex flex-col gap-3 overflow-y-auto pr-2 hide-scrollbar flex-grow">
+          <!-- Populated by JS -->
+          <div class="text-center py-10 text-warm-text">
+            <span class="inline-block animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-warm-orange mb-2"></span>
+            <p>กำลังดึงข้อมูล...</p>
+          </div>
+        </div>
+      </div>
+    </div> <!-- Close main grid here -->
+      
+    <!-- Analytics Section (Full Width) -->
+    <div class="max-w-6xl mx-auto mt-8" id="analyticsSection" style="display: none;">
+      <div class="flex justify-between items-end mb-6">
+        <h2 class="text-xl font-medium text-warm-textDark flex items-center gap-2">
+          <span>📊</span> Model Insights & Analytics
+        </h2>
+        <button id="btnEvaluate" onclick="evaluateModel()" class="bg-warm-textDark text-white px-5 py-2 rounded-xl text-sm font-medium hover:bg-warm-text transition flex items-center gap-2">
+          <span id="evalIcon">🔄</span> <span id="evalText">Evaluate Model</span>
+        </button>
+      </div>
+      
+      <div class="grid lg:grid-cols-2 gap-10" id="analyticsContent" style="display: none;">
+        
+        <!-- Cross-Validation / Performance -->
+        <div class="bg-white rounded-[2rem] shadow-soft p-8 border border-warm-border">
+          <h3 class="text-md font-medium text-warm-textDark mb-4">Model Performance (on Dataset)</h3>
+          
+          <div class="flex items-end gap-4 mb-8">
+            <div class="text-6xl font-chakra font-semibold text-warm-orange"><span id="valAccuracy">0.0</span><span class="text-3xl text-warm-text">%</span></div>
+            <div class="pb-2 text-base text-warm-text font-medium">Accuracy</div>
+          </div>
+          
+          <div class="space-y-6">
+            <div>
+              <div class="flex justify-between text-sm text-warm-text mb-1.5">
+                <span>Precision (Macro)</span><span class="font-chakra" id="valPrecision">0.0%</span>
+              </div>
+              <div class="w-full h-2 bg-warm-bg rounded-full overflow-hidden"><div id="barPrecision" class="h-full bg-warm-paper w-[0%] transition-all duration-1000"></div></div>
+            </div>
+            <div>
+              <div class="flex justify-between text-sm text-warm-text mb-1.5">
+                <span>Recall (Macro)</span><span class="font-chakra" id="valRecall">0.0%</span>
+              </div>
+              <div class="w-full h-2 bg-warm-bg rounded-full overflow-hidden"><div id="barRecall" class="h-full bg-warm-paper w-[0%] transition-all duration-1000"></div></div>
+            </div>
+            <div>
+              <div class="flex justify-between text-sm text-warm-text mb-1.5">
+                <span>F1-Score (Macro)</span><span class="font-chakra" id="valF1">0.0%</span>
+              </div>
+              <div class="w-full h-2 bg-warm-bg rounded-full overflow-hidden"><div id="barF1" class="h-full bg-warm-paper w-[0%] transition-all duration-1000"></div></div>
+            </div>
+          </div>
+          
+          <p class="mt-8 text-sm text-warm-text leading-relaxed bg-warm-bg p-5 rounded-2xl border border-warm-paper">
+            <strong>ข้อมูลอ้างอิง:</strong> ประเมินผลสดจากรูปภาพทั้งหมด <span id="valTotalImages" class="font-medium text-warm-textDark">0</span> รูป ในโฟลเดอร์ Dataset (เลข ๒๖-๓๐)
+          </p>
+        </div>
+
+        <!-- Error Analysis -->
+        <div class="bg-white rounded-[2rem] shadow-soft p-8 border border-warm-border flex flex-col">
+          <h3 class="text-md font-medium text-warm-textDark mb-4 flex justify-between items-center">
+            <span>Error Analysis (Confused Classes)</span>
+            <span class="text-xs bg-red-50 text-red-600 px-3 py-1.5 rounded-lg border border-red-100 font-medium">Top Errors</span>
+          </h3>
+          
+          <p class="text-sm text-warm-text mb-8">ทายผิดทั้งหมด <span id="valTotalErrors" class="font-medium text-red-500">0</span> ครั้ง นี่คือคู่ตัวเลขที่โมเดลสับสนมากที่สุด</p>
+          
+          <div class="flex flex-col gap-6 flex-grow" id="errorCardsContainer">
+            <!-- Dynamically populated -->
+          </div>
+          
+          <div id="noErrorsMsg" class="hidden text-center py-10">
+            <span class="text-4xl">🎉</span>
+            <p class="text-base text-warm-text mt-3 font-medium">สุดยอด! โมเดลทำนายได้ถูกต้อง 100%</p>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </main>
+
+  <!-- Toast Container -->
+  <div class="fixed bottom-6 right-6 z-50 flex flex-col gap-2" id="toastContainer"></div>
+
+  <script>
+    // ─── State ───────────────────────────────
+    let selectedFile = null;
+    let models = [];
+
+    // ─── File Handling ────────────────────────
+    function handleFileSelect(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      setFile(file);
+    }
+
+    function setFile(file) {
+      selectedFile = file;
+      document.getElementById('previewName').textContent = file.name;
+      document.getElementById('previewSize').textContent = formatSize(file.size);
+      document.getElementById('filePreview').classList.remove('hidden');
+      document.getElementById('filePreview').classList.add('flex');
+      document.getElementById('uploadBtn').disabled = false;
+
+      // Drag zone visual
+      const zone = document.getElementById('uploadZone');
+      zone.classList.add('border-warm-orange', 'bg-[#fff9f5]');
+    }
+
+    function removeFile() {
+      selectedFile = null;
+      document.getElementById('modelFile').value = '';
+      document.getElementById('filePreview').classList.add('hidden');
+      document.getElementById('filePreview').classList.remove('flex');
+      document.getElementById('uploadBtn').disabled = true;
+      document.getElementById('progressWrap').classList.add('hidden');
+      document.getElementById('progressFill').style.width = '0%';
+      
+      const zone = document.getElementById('uploadZone');
+      zone.classList.remove('border-warm-orange', 'bg-[#fff9f5]');
+    }
+
+    function formatSize(bytes) {
+      if (bytes < 1024) return bytes + ' B';
+      if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+      return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+    }
+
+    // ─── Drag & Drop ──────────────────────────
+    const zone = document.getElementById('uploadZone');
+    zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('dragover'); });
+    zone.addEventListener('dragleave', () => zone.classList.remove('dragover'));
+    zone.addEventListener('drop', e => {
+      e.preventDefault();
+      zone.classList.remove('dragover');
+      const file = e.dataTransfer.files[0];
+      if (file) setFile(file);
+    });
+
+    // ─── Upload Flow ──────────────────────────
+    async function confirmUpload() {
+      if (!selectedFile) return;
+
+      const btn = document.getElementById('uploadBtn');
+      btn.disabled = true;
+      document.getElementById('uploadBtnIcon').innerHTML = '<span class="inline-block animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-white"></span>';
+      document.getElementById('uploadBtnText').textContent = 'กำลังอัปโหลด...';
+
+      const progressWrap = document.getElementById('progressWrap');
+      const fill = document.getElementById('progressFill');
+      progressWrap.classList.remove('hidden');
+      fill.style.width = '50%';
+
+      const formData = new FormData();
+      formData.append('file', selectedFile);
+
+      try {
+        const response = await fetch('/api/upload_model', {
+          method: 'POST',
+          body: formData
+        });
+        const data = await response.json();
+        
+        fill.style.width = '100%';
+        
+        if (response.ok) {
+          showToast('success', `อัปโหลด "${data.filename}" สำเร็จ! ระบบสลับโมเดลให้แล้ว`);
+          await fetchModels();
+          resetAnalytics();
+        } else {
+          showToast('error', `เกิดข้อผิดพลาด: ${data.error}`);
+        }
+      } catch (e) {
+        showToast('error', `เครือข่ายขัดข้อง: ${e}`);
+      } finally {
+        document.getElementById('uploadBtnIcon').textContent = '✅';
+        document.getElementById('uploadBtnText').textContent = 'ยืนยันการอัปโหลด';
+        setTimeout(() => {
+          progressWrap.classList.add('hidden');
+          fill.style.width = '0%';
+          removeFile();
+        }, 800);
+      }
+    }
+
+    // ─── Toast Notifications ──────────────────
+    function showToast(type, msg) {
+      const container = document.getElementById('toastContainer');
+      const toast = document.createElement('div');
+      
+      let icon = type === 'success' ? '✅' : type === 'error' ? '❌' : 'ℹ️';
+      let bg = type === 'success' ? 'bg-[#f0f7f0] border-[#b2d8b5]' : type === 'error' ? 'bg-[#fdf3f0] border-[#e0b0a5]' : 'bg-[#fff8f0] border-[#e8d0b0]';
+      let text = type === 'success' ? 'text-green-800' : type === 'error' ? 'text-red-800' : 'text-warm-textDark';
+
+      toast.className = `toast flex items-center gap-3 px-4 py-3 rounded-xl border shadow-lg ${bg} ${text}`;
+      toast.innerHTML = `<span class="text-lg">${icon}</span><span class="text-sm font-medium">${msg}</span>`;
+      
+      container.appendChild(toast);
+      
+      setTimeout(() => toast.classList.add('show'), 10);
+      
+      setTimeout(() => {
+        toast.classList.remove('show');
+        setTimeout(() => toast.remove(), 300);
+      }, 4000);
+    }
+
+    // ─── API Fetch ────────────────────────────
+    async function fetchModels() {
+      try {
+        const response = await fetch('/api/models');
+        const data = await response.json();
+        models = data.models || [];
+        const activeModelName = data.active_model || '—';
+        updateCurrentModel(activeModelName);
+        renderModelList();
+        
+        // Show analytics section if we have an active model
+        if (models.length > 0) {
+          document.getElementById('analyticsSection').style.display = 'block';
+        } else {
+          document.getElementById('analyticsSection').style.display = 'none';
+        }
+      } catch (e) {
+        console.error("Failed to fetch models", e);
+      }
+    }
+
+    // ─── Model List ───────────────────────────
+    function updateCurrentModel(name) {
+      document.getElementById('currentModelName').textContent = name;
+    }
+
+    function resetAnalytics() {
+      document.getElementById('analyticsContent').style.display = 'none';
+    }
+
+    async function switchModel(id) {
+      const model = models.find(m => m.id === id);
+      if (!model) return;
+      
+      const oldActive = models.find(m => m.active);
+      if(oldActive) oldActive.active = false;
+      model.active = true;
+      renderModelList();
+      updateCurrentModel(model.name);
+      resetAnalytics();
+
+      try {
+        const response = await fetch('/api/switch_model', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({filename: model.name})
+        });
+        const data = await response.json();
+        if (response.ok) {
+          showToast('info', `สลับมาใช้งาน "${model.name}" เรียบร้อย`);
+        } else {
+          showToast('error', `ไม่สามารถสลับ model ได้: ${data.error}`);
+          await fetchModels(); 
+        }
+      } catch (e) {
+        showToast('error', `เกิดข้อผิดพลาด: ${e}`);
+        await fetchModels(); 
+      }
+    }
+
+    async function deleteModel(id, name) {
+      const model = models.find(m => m.id === id);
+      if (model && model.active) {
+        showToast('error', 'ไม่สามารถลบโมเดลที่กำลังใช้งานอยู่ได้');
+        return;
+      }
+      
+      if(!confirm(`ยืนยันการลบโมเดล "${name}" ?`)) return;
+
+      try {
+        const response = await fetch('/api/delete_model', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({filename: name})
+        });
+        const data = await response.json();
+        if (response.ok) {
+          showToast('info', `ลบ "${name}" ออกจากระบบแล้ว`);
+          await fetchModels();
+        } else {
+          showToast('error', `ไม่สามารถลบ model ได้: ${data.error}`);
+        }
+      } catch (e) {
+        showToast('error', `เกิดข้อผิดพลาด: ${e}`);
+      }
+    }
+
+    function renderModelList() {
+      const list = document.getElementById('modelList');
+
+      if (models.length === 0) {
+        list.innerHTML = `
+          <div class="text-center py-10 text-warm-text bg-warm-bg rounded-2xl border border-warm-paper">
+            <div class="text-4xl mb-2 opacity-50">📭</div>
+            <p class="text-sm">ยังไม่มีโมเดลในระบบ<br>อัปโหลดโมเดลแรกของคุณได้เลย!</p>
+          </div>`;
+        return;
+      }
+
+      list.innerHTML = models.map(m => `
+        <div class="model-item border border-warm-paper rounded-2xl p-4 flex items-center gap-4 bg-white cursor-pointer ${m.active ? 'active' : ''}" onclick="!event.target.closest('button') && switchModel('${m.id}')">
+          <div class="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${m.active ? 'bg-warm-orange text-white' : 'bg-warm-bg text-warm-textDark'} transition-colors">
+            ${m.active ? '✓' : '📦'}
+          </div>
+          <div class="flex-grow min-w-0">
+            <div class="font-medium text-sm text-warm-textDark truncate">${m.name}</div>
+            <div class="text-xs text-warm-text mt-0.5 flex gap-2">
+              <span>${m.size}</span> <span>·</span> <span>${m.date}</span>
+            </div>
+          </div>
+          <div class="shrink-0 flex items-center gap-2">
+            ${m.active
+              ? `<span class="text-[11px] font-medium px-3 py-1.5 rounded-full bg-warm-orange text-white tracking-wide shadow-sm">ใช้งานอยู่</span>`
+              : `<button class="text-xs font-medium px-4 py-1.5 rounded-full border border-warm-paper text-warm-text hover:border-warm-orange hover:text-warm-orange transition-colors" onclick="switchModel('${m.id}')">ใช้งาน</button>`
+            }
+            <button class="text-warm-text hover:text-red-500 p-1.5 transition-colors" onclick="deleteModel('${m.id}', '${m.name}')" title="ลบ">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
+            </button>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    // ─── Evaluation Logic ─────────────────────
+    async function evaluateModel() {
+      const btn = document.getElementById('btnEvaluate');
+      const icon = document.getElementById('evalIcon');
+      const text = document.getElementById('evalText');
+      const content = document.getElementById('analyticsContent');
+      
+      btn.disabled = true;
+      icon.innerHTML = '<span class="inline-block animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-white"></span>';
+      text.textContent = 'กำลังตรวจข้อสอบ (รอประมาณ 2-5 วิ)...';
+      content.style.display = 'none';
+
+      try {
+        const response = await fetch('/api/evaluate');
+        const data = await response.json();
+        
+        if (response.ok) {
+          content.style.display = 'grid';
+          
+          document.getElementById('valAccuracy').textContent = data.accuracy;
+          document.getElementById('valPrecision').textContent = data.precision + '%';
+          document.getElementById('valRecall').textContent = data.recall + '%';
+          document.getElementById('valF1').textContent = data.f1_score + '%';
+          document.getElementById('valTotalImages').textContent = data.total_images;
+          document.getElementById('valTotalErrors').textContent = data.total_errors;
+          
+          setTimeout(() => {
+            document.getElementById('barPrecision').style.width = data.precision + '%';
+            document.getElementById('barRecall').style.width = data.recall + '%';
+            document.getElementById('barF1').style.width = data.f1_score + '%';
+          }, 100);
+
+          const errContainer = document.getElementById('errorCardsContainer');
+          const noErrMsg = document.getElementById('noErrorsMsg');
+          
+          errContainer.innerHTML = '';
+          if (data.top_errors && data.top_errors.length > 0) {
+            noErrMsg.classList.add('hidden');
+            
+            data.top_errors.forEach(err => {
+              errContainer.innerHTML += `
+                <div class="flex items-center gap-6 p-6 border border-warm-paper rounded-2xl bg-warm-bg">
+                  <div class="flex flex-col items-center">
+                    <div class="w-16 h-16 bg-white rounded-xl flex items-center justify-center font-chakra text-3xl text-warm-textDark shadow-sm">${err.true_class}</div>
+                    <span class="text-[11px] font-medium text-warm-text mt-2">Actual Class</span>
+                  </div>
+                  
+                  <div class="flex-grow flex flex-col items-center relative min-w-0">
+                    <div class="w-full h-px bg-warm-paper absolute top-1/2 -translate-y-1/2"></div>
+                    <span class="bg-warm-bg px-3 text-xs text-warm-orange z-10 font-semibold tracking-wide">Confused With</span>
+                    <span class="text-[11px] text-warm-text mt-2 text-center bg-white px-3 py-1 rounded-full border border-warm-paper shadow-sm">ทายผิด ${err.count} ครั้ง (${err.percentage}%)</span>
+                  </div>
+                  
+                  <div class="flex flex-col items-center">
+                    <div class="w-16 h-16 bg-white rounded-xl flex items-center justify-center font-chakra text-3xl text-red-500 shadow-sm border border-red-100">${err.pred_class}</div>
+                    <span class="text-[11px] font-medium text-red-500 mt-2">Predicted As</span>
+                  </div>
+                </div>
+              `;
+            });
+          } else {
+            noErrMsg.classList.remove('hidden');
+          }
+          
+          showToast('success', 'ประเมินผลสำเร็จ!');
+        } else {
+          showToast('error', `ข้อผิดพลาด: ${data.error}`);
+        }
+      } catch (e) {
+        showToast('error', `เกิดข้อผิดพลาดในการเชื่อมต่อ: ${e}`);
+      } finally {
+        btn.disabled = false;
+        icon.textContent = '🔄';
+        text.textContent = 'รันการประเมินผลใหม่';
+      }
+    }
+
+    // ─── Init ─────────────────────────────────
+    fetchModels();
+  </script>
+</body>
+</html>

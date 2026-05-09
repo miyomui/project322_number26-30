@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ระบบทำนายเลขไทยจากลายมือ | Thai Numeral Prediction</title>
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@300;400;500;600&family=Mitr:wght@300;400;500&display=swap" rel="stylesheet">
+  
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            warm: {
+              bg: '#FDF8F0',       /* ครีมสว่าง */
+              paper: '#E3CDBA',    /* สีเบจกระดาษ */
+              text: '#7A6452',     /* น้ำตาลอ่อน (ข้อความรอง) */
+              textDark: '#5C4738', /* น้ำตาลเข้ม (ข้อความหลัก) */
+              orange: '#D28E6A',   /* ส้มอิฐ */
+              orangeHover: '#c47d59',
+              shadow: '#C8B09C',
+              border: '#f0e6dd'
+            }
+          },
+          fontFamily: {
+            mitr: ['Mitr', 'sans-serif'],
+            chakra: ['"Chakra Petch"', 'sans-serif'],
+          },
+          boxShadow: {
+            'soft': '0 8px 30px rgba(92, 71, 56, 0.08)',
+            'inner-soft': 'inset 0 2px 10px rgba(92, 71, 56, 0.05)'
+          }
+        }
+      }
+    }
+  </script>
+  
+  <style>
+    .hide-scrollbar::-webkit-scrollbar { display: none; }
+    .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    
+    canvas { touch-action: none; cursor: crosshair; }
+    
+    input[type=range] { accent-color: #5C4738; cursor: pointer; }
+    input[type=range]:disabled { accent-color: #C8B09C; opacity: 0.4; cursor: not-allowed; }
+
+    .tool-active { background-color: #E3CDBA; color: #5C4738; box-shadow: inset 0 2px 4px rgba(0,0,0,0.05); }
+    .tool-inactive { background-color: white; color: #7A6452; border: 1px solid #f0e6dd; }
+    .tool-inactive:hover { background-color: #faf5f0; }
+    
+    .nav-link { transition: all 0.2s ease; }
+    .nav-link-active { background: #D28E6A; color: white; box-shadow: 0 2px 6px rgba(210, 142, 106, 0.3); }
+    .nav-link-inactive { background: white; color: #7A6452; border: 1px solid #E3CDBA; }
+    .nav-link-inactive:hover { background: #fdf5f0; border-color: #D28E6A; color: #D28E6A; }
+  </style>
+</head>
+<body class="font-mitr bg-warm-bg text-warm-textDark min-h-screen flex flex-col" onclick="closePopups(event)">
+
+  <!-- Header Section -->
+  <header class="pt-10 pb-6 px-6 shrink-0">
+    <div class="max-w-4xl mx-auto flex flex-col md:flex-row justify-between items-center gap-6 border-b border-warm-paper pb-6">
+      <div class="text-center md:text-left">
+        <h1 class="text-2xl md:text-3xl font-medium text-warm-textDark mb-1">ระบบทำนายตัวเลขไทยจากลายมือ</h1>
+        <p class="text-warm-text font-light text-sm md:text-base">วาดตัวเลขไทย (๒๖ - ๓๐) ลงในกระดานด้านล่าง เพื่อให้ AI วิเคราะห์</p>
+      </div>
+      
+      <nav class="flex gap-3 shrink-0">
+        <a href="/" class="nav-link nav-link-active px-6 py-2.5 rounded-full text-sm font-medium">User Page</a>
+        <a href="/admin" class="nav-link nav-link-inactive px-6 py-2.5 rounded-full text-sm font-medium">Admin Page</a>
+      </nav>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main class="flex-grow flex items-center justify-center p-6">
+    <div class="max-w-4xl w-full bg-white rounded-[2rem] shadow-soft p-8 md:p-12 border border-warm-border">
+      
+      <div class="grid md:grid-cols-[1fr_300px] gap-10 md:gap-16">
+        
+        <!-- Left: Drawing Section -->
+        <div class="flex flex-col items-center w-full">
+          
+          <!-- Toolbar -->
+          <div class="flex items-center gap-3 mb-6 relative w-full max-w-[340px] justify-center" id="toolbarContainer">
+            <span class="text-sm text-warm-text mr-2 font-medium">เครื่องมือ:</span>
+            
+            <button id="btnPen" onclick="togglePopup('penPopup', event)" class="tool-active w-12 h-12 rounded-2xl transition-all flex items-center justify-center">
+              <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path></svg>
+            </button>
+            
+            <button id="btnEraser" onclick="togglePopup('eraserPopup', event)" class="tool-inactive w-12 h-12 rounded-2xl transition-all flex items-center justify-center">
+              <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 20H7L3 16C2.5 15.5 2.5 14.5 3 14L13 4C13.5 3.5 14.5 3.5 15 4L20 9C20.5 9.5 20.5 10.5 20 11L11 20"></path><path d="M16 16L12 12"></path></svg>
+            </button>
+
+            <!-- Pen Popup -->
+            <div id="penPopup" class="hidden absolute top-14 left-1/2 -translate-x-1/2 w-80 bg-white shadow-[0_10px_40px_rgba(92,71,56,0.15)] rounded-2xl p-5 border border-warm-paper z-20" onclick="event.stopPropagation()">
+              <div class="absolute -top-2 left-1/2 -translate-x-1/2 w-4 h-4 bg-white border-t border-l border-warm-paper rotate-45"></div>
+              <p class="text-[11px] font-medium text-warm-text mb-3 tracking-wider">ประเภทหัวปากกา</p>
+              <div class="flex gap-2 bg-warm-bg rounded-xl p-1.5 mb-3">
+                <button onclick="setPenType('fountain')" id="type-fountain" class="flex-1 py-1.5 text-xs rounded-lg bg-white shadow-sm text-warm-textDark font-medium transition">หัวตัด</button>
+                <button onclick="setPenType('ballpoint')" id="type-ballpoint" class="flex-1 py-1.5 text-xs rounded-lg text-warm-text hover:bg-white/50 font-medium transition">ลูกลื่น</button>
+                <button onclick="setPenType('brush')" id="type-brush" class="flex-1 py-1.5 text-xs rounded-lg text-warm-text hover:bg-white/50 font-medium transition">พู่กัน</button>
+              </div>
+              <p id="penDesc" class="text-[11px] text-warm-orange mb-5 font-light leading-relaxed h-8 text-center">ปากกาหัวตัด ไวต่อแรงกดและปรับความคมได้</p>
+
+              <div class="mb-4">
+                <label class="flex justify-between text-[11px] font-medium text-warm-text mb-2">
+                  <span>ขนาด (SIZE)</span>
+                  <span id="sizeVal" class="font-chakra text-warm-orange">0.5</span>
+                </label>
+                <input type="range" id="penSize" min="0.1" max="1.0" step="0.1" value="0.5" class="w-full" oninput="updatePenUI()">
+              </div>
+              
+              <div class="mb-4">
+                <label class="flex justify-between text-[11px] font-medium text-warm-text mb-2" id="labelSharp">
+                  <span>ความคม (SHARPNESS)</span>
+                </label>
+                <input type="range" id="tipSharp" min="0" max="1" step="0.1" value="0.5" class="w-full">
+              </div>
+              
+              <div>
+                <label class="flex justify-between text-[11px] font-medium text-warm-text mb-2" id="labelPressure">
+                  <span>แรงกด (PRESSURE)</span>
+                </label>
+                <input type="range" id="pressureSense" min="0" max="1" step="0.1" value="0.5" class="w-full">
+              </div>
+            </div>
+
+            <!-- Eraser Popup -->
+            <div id="eraserPopup" class="hidden absolute top-14 left-1/2 -translate-x-1/2 w-64 bg-white shadow-[0_10px_40px_rgba(92,71,56,0.15)] rounded-2xl p-5 border border-warm-paper z-20" onclick="event.stopPropagation()">
+              <div class="absolute -top-2 left-1/2 -translate-x-1/2 w-4 h-4 bg-white border-t border-l border-warm-paper rotate-45"></div>
+              <p class="text-[11px] font-medium text-warm-text mb-4 tracking-wider">ตั้งค่ายางลบ</p>
+              <div>
+                <label class="flex justify-between text-[11px] font-medium text-warm-text mb-2">
+                  <span>ขนาด (SIZE)</span>
+                  <span id="eraserSizeVal" class="font-chakra text-warm-orange">0.5</span>
+                </label>
+                <input type="range" id="eraserSize" min="0.1" max="1.0" step="0.1" value="0.5" class="w-full" oninput="updateEraserUI()">
+              </div>
+            </div>
+          </div>
+
+          <!-- Canvas Area -->
+          <div class="relative group">
+            <div class="absolute -inset-1 bg-gradient-to-br from-warm-paper to-warm-bg rounded-[2rem] blur-sm opacity-50 group-hover:opacity-80 transition duration-500"></div>
+            <div class="relative w-[340px] h-[340px] bg-white rounded-3xl border-2 border-warm-paper overflow-hidden shadow-inner-soft cursor-crosshair">
+              <!-- Grid Background for sketching feel -->
+              <div class="absolute inset-0 opacity-[0.03] pointer-events-none" style="background-image: linear-gradient(#5C4738 1px, transparent 1px), linear-gradient(90deg, #5C4738 1px, transparent 1px); background-size: 20px 20px;"></div>
+              
+              <canvas id="drawCanvas" width="340" height="340" class="absolute inset-0 touch-none w-full h-full"></canvas>
+            </div>
+          </div>
+          
+          <!-- Actions -->
+          <div class="flex gap-4 w-full max-w-[340px] mt-8">
+            <button onclick="clearCanvas()" class="flex-1 bg-white border-2 border-warm-paper text-warm-text hover:bg-warm-bg hover:text-warm-textDark hover:border-warm-textDark py-3.5 rounded-2xl font-medium transition-all duration-200">ล้างกระดาน</button>
+            <button onclick="predict()" id="predictBtn" class="flex-1 bg-warm-orange hover:bg-warm-orangeHover text-white py-3.5 rounded-2xl font-medium transition-all duration-200 shadow-[0_4px_14px_rgba(210,142,106,0.35)] hover:shadow-[0_6px_20px_rgba(210,142,106,0.45)] hover:-translate-y-0.5 flex items-center justify-center gap-2">
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12h4l3-9 5 18 3-9h5"/></svg>
+              <span>ทำนายผล</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Right: Result Section -->
+        <div class="flex flex-col h-full mt-10 md:mt-0">
+          <div class="bg-warm-bg rounded-3xl p-8 border border-warm-paper h-full flex flex-col relative overflow-hidden">
+            <!-- Decorative circle -->
+            <div class="absolute -right-10 -top-10 w-32 h-32 bg-white rounded-full opacity-40 blur-2xl"></div>
+            
+            <h2 class="text-sm font-medium text-warm-text tracking-wide mb-auto">RESULT / ผลลัพธ์</h2>
+            
+            <div class="flex flex-col items-center justify-center py-8">
+              <div id="prediction" class="font-chakra text-9xl font-semibold text-warm-textDark mb-2 transition-all duration-300 drop-shadow-sm">-</div>
+              <p class="text-warm-orange font-medium text-sm">เลขไทย</p>
+            </div>
+            
+            <div class="mt-auto bg-white p-5 rounded-2xl border border-warm-paper/60 shadow-sm">
+              <div class="flex justify-between items-end mb-3">
+                <span class="text-xs font-medium text-warm-text">ความมั่นใจ (Confidence)</span>
+                <span id="confidenceText" class="font-chakra text-lg font-medium text-warm-orange">0.0%</span>
+              </div>
+              <div class="w-full h-2.5 bg-warm-bg rounded-full overflow-hidden inset-shadow">
+                <div id="confidenceFill" class="h-full bg-gradient-to-r from-warm-orange to-[#e5a07c] w-0 transition-all duration-700 ease-out rounded-full"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </main>
+
+  <script>
+    // --- State Management ---
+    let activeTool = 'pen'; // 'pen' หรือ 'eraser'
+    let currentPenType = 'fountain';
+
+    // --- UI Logic: Popups & Tools ---
+    function togglePopup(popupId, event) {
+      event.stopPropagation();
+      const popup = document.getElementById(popupId);
+      const penPopup = document.getElementById('penPopup');
+      const eraserPopup = document.getElementById('eraserPopup');
+      const btnPen = document.getElementById('btnPen');
+      const btnEraser = document.getElementById('btnEraser');
+
+      if (popupId === 'penPopup') {
+        eraserPopup.classList.add('hidden');
+        activeTool = 'pen';
+        btnPen.className = 'tool-active w-12 h-12 rounded-2xl transition-all flex items-center justify-center';
+        btnEraser.className = 'tool-inactive w-12 h-12 rounded-2xl transition-all flex items-center justify-center';
+      } else {
+        penPopup.classList.add('hidden');
+        activeTool = 'eraser';
+        btnEraser.className = 'tool-active w-12 h-12 rounded-2xl transition-all flex items-center justify-center';
+        btnPen.className = 'tool-inactive w-12 h-12 rounded-2xl transition-all flex items-center justify-center';
+      }
+
+      popup.classList.toggle('hidden');
+    }
+
+    function closePopups(event) {
+      document.getElementById('penPopup').classList.add('hidden');
+      document.getElementById('eraserPopup').classList.add('hidden');
+    }
+
+    function setPenType(type) {
+      currentPenType = type;
+      
+      const types = ['fountain', 'ballpoint', 'brush'];
+      types.forEach(t => {
+        const btn = document.getElementById(`type-${t}`);
+        if (t === type) {
+          btn.className = 'flex-1 py-1.5 text-xs rounded-lg bg-white shadow-sm text-warm-textDark font-medium transition';
+        } else {
+          btn.className = 'flex-1 py-1.5 text-xs rounded-lg text-warm-text hover:bg-white/50 font-medium transition';
+        }
+      });
+
+      const desc = document.getElementById('penDesc');
+      const sharpInput = document.getElementById('tipSharp');
+      const pressureInput = document.getElementById('pressureSense');
+      const labelSharp = document.getElementById('labelSharp');
+      const labelPressure = document.getElementById('labelPressure');
+
+      if (type === 'fountain') {
+        desc.textContent = "ปากกาหัวตัด ไวต่อแรงกดและปรับความคมได้";
+        sharpInput.disabled = false;
+        pressureInput.disabled = false;
+        labelSharp.style.opacity = 1;
+        labelPressure.style.opacity = 1;
+      } else if (type === 'ballpoint') {
+        desc.textContent = "ปากกาลูกลื่น เส้นสม่ำเสมอ ไม่ไวต่อแรงกด";
+        sharpInput.disabled = true;
+        pressureInput.disabled = true;
+        labelSharp.style.opacity = 0.4;
+        labelPressure.style.opacity = 0.4;
+      } else if (type === 'brush') {
+        desc.textContent = "พู่กันศิลปะ ไวต่อแรงกดสูงมาก";
+        sharpInput.disabled = true;
+        pressureInput.disabled = false;
+        labelSharp.style.opacity = 0.4;
+        labelPressure.style.opacity = 1;
+      }
+    }
+
+    function updatePenUI() {
+      document.getElementById('sizeVal').textContent = parseFloat(document.getElementById('penSize').value).toFixed(1);
+    }
+
+    function updateEraserUI() {
+      document.getElementById('eraserSizeVal').textContent = parseFloat(document.getElementById('eraserSize').value).toFixed(1);
+    }
+
+    // --- Canvas Drawing Logic ---
+    const canvas = document.getElementById('drawCanvas');
+    const ctx = canvas.getContext('2d');
+    
+    // Fill white background initially
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    
+    let isDrawing = false;
+    let lastX = 0, lastY = 0;
+
+    function getPos(e) {
+      const rect = canvas.getBoundingClientRect();
+      return { 
+        x: (e.clientX - rect.left) * (canvas.width / rect.width), 
+        y: (e.clientY - rect.top) * (canvas.height / rect.height) 
+      };
+    }
+
+    function startDraw(e) {
+      isDrawing = true;
+      const pos = getPos(e);
+      lastX = pos.x;
+      lastY = pos.y;
+      canvas.setPointerCapture(e.pointerId); 
+    }
+
+    function draw(e) {
+      if (!isDrawing) return;
+      e.preventDefault();
+      
+      const pos = getPos(e);
+      
+      if (activeTool === 'eraser') {
+        const eraserSize = parseFloat(document.getElementById('eraserSize').value) * 40; 
+        ctx.globalCompositeOperation = 'source-over';
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+        ctx.lineWidth = eraserSize;
+        ctx.beginPath();
+        ctx.moveTo(lastX, lastY);
+        ctx.lineTo(pos.x, pos.y);
+        ctx.stroke();
+
+      } else {
+        ctx.globalCompositeOperation = 'source-over';
+        ctx.strokeStyle = '#3a2a1a'; // Very dark brown/black for drawing
+
+        const baseSize = parseFloat(document.getElementById('penSize').value) * 25;
+        const sharpness = parseFloat(document.getElementById('tipSharp').value);
+        const pSense = parseFloat(document.getElementById('pressureSense').value);
+        
+        let pressure = e.pressure !== undefined ? e.pressure : 0.5;
+        if (pressure === 0) pressure = 0.5;
+
+        let currentWidth = baseSize;
+
+        if (currentPenType === 'ballpoint') {
+          ctx.lineCap = 'round';
+          ctx.lineJoin = 'round';
+          currentWidth = baseSize;
+          
+        } else if (currentPenType === 'fountain') {
+          ctx.lineCap = sharpness > 0.5 ? 'butt' : 'round';
+          ctx.lineJoin = sharpness > 0.5 ? 'miter' : 'round';
+          const sensitivity = 0.4 + (pSense * 0.6); 
+          currentWidth = baseSize * (0.5 + (pressure * sensitivity));
+          
+        } else if (currentPenType === 'brush') {
+          ctx.lineCap = 'round';
+          ctx.lineJoin = 'round';
+          const sensitivity = 0.8 + (pSense * 1.5);
+          currentWidth = baseSize * (0.1 + (pressure * sensitivity));
+        }
+
+        ctx.lineWidth = currentWidth;
+        ctx.beginPath();
+        ctx.moveTo(lastX, lastY);
+        ctx.lineTo(pos.x, pos.y);
+        ctx.stroke();
+      }
+
+      lastX = pos.x;
+      lastY = pos.y;
+    }
+
+    function stopDraw(e) {
+      isDrawing = false;
+      canvas.releasePointerCapture(e.pointerId);
+    }
+
+    canvas.addEventListener('pointerdown', startDraw);
+    canvas.addEventListener('pointermove', draw);
+    canvas.addEventListener('pointerup', stopDraw);
+    canvas.addEventListener('pointercancel', stopDraw);
+    canvas.addEventListener('pointerleave', stopDraw);
+    canvas.addEventListener('touchstart', (e) => e.preventDefault(), {passive: false});
+
+    // --- Action Buttons ---
+    function clearCanvas(){ 
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0,0,canvas.width,canvas.height); 
+      
+      const predEl = document.getElementById('prediction');
+      predEl.style.opacity = '0';
+      setTimeout(() => {
+        predEl.textContent = '-';
+        predEl.style.opacity = '1';
+      }, 200);
+      
+      document.getElementById('confidenceText').textContent = '0.0%';
+      document.getElementById('confidenceFill').style.width = '0%';
+    }
+
+    async function predict(){ 
+      const dataURL = canvas.toDataURL('image/png');
+      const btn = document.getElementById('predictBtn');
+      const originalHtml = btn.innerHTML;
+      
+      try {
+        btn.innerHTML = `<span class="inline-block animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-white"></span><span>กำลังประมวลผล...</span>`;
+        btn.disabled = true;
+        
+        document.getElementById('prediction').style.opacity = '0.5';
+        
+        const response = await fetch('/api/predict', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ image: dataURL })
+        });
+        
+        const data = await response.json();
+        
+        document.getElementById('prediction').style.opacity = '1';
+        
+        if (response.ok) {
+          const predEl = document.getElementById('prediction');
+          predEl.style.transform = 'scale(1.1)';
+          predEl.textContent = data.prediction;
+          setTimeout(() => predEl.style.transform = 'scale(1)', 200);
+          
+          const confPercent = (data.confidence * 100).toFixed(1);
+          document.getElementById('confidenceText').textContent = `${confPercent}%`;
+          document.getElementById('confidenceFill').style.width = `${confPercent}%`;
+        } else {
+          document.getElementById('prediction').textContent = '!';
+          document.getElementById('confidenceText').textContent = 'Error';
+          alert('Error: ' + data.error);
+        }
+      } catch (e) {
+        console.error(e);
+        document.getElementById('prediction').textContent = '!';
+        document.getElementById('confidenceText').textContent = 'Network Error';
+      } finally {
+        btn.innerHTML = originalHtml;
+        btn.disabled = false;
+      }
+    }
+  </script>
+</body>
+</html>
