@@ -43,8 +43,7 @@ def load_active_model():
         print(f"Error loading model {active_model_name}: {e}")
         global_model = None
 
-# Initial model load
-load_active_model()
+
 
 # --- Page Routes ---
 
@@ -65,8 +64,12 @@ def static_files(path):
 
 @app.route('/api/predict', methods=['POST'])
 def predict():
+    global global_model
     if global_model is None:
-        return jsonify({"error": "No model loaded"}), 500
+        load_active_model()
+        
+    if global_model is None:
+        return jsonify({"error": "No model loaded and failed to load default"}), 500
 
     data = request.json
     if not data or 'image' not in data:
