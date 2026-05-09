@@ -2,6 +2,12 @@
 
 โปรเจกต์นี้เป็น Web Application แบบ Full-stack สำหรับ **การจัดเก็บข้อมูล (Data Collection)** และ **ทำนายลายมือตัวเลขไทย (๒๖-๓๐)** ด้วย Machine Learning (CNN) โดยออกแบบมาให้ใช้งานง่าย รวดเร็ว และรองรับการทำงานทั้งฝั่งผู้ใช้งานทั่วไป (User) และผู้ดูแลระบบ (Admin)
 
+## 🌐 ลิงก์ใช้งานจริง (Live Demo)
+- **เว็บทำนายลายมือ (Prediction App):** [https://project322-number26-30.onrender.com/](https://project322-number26-30.onrender.com/)
+- **เว็บเก็บข้อมูล (Data Collection Tool):** [https://miyomui.pythonanywhere.com/](https://miyomui.pythonanywhere.com/)
+
+---
+
 ## ✨ ฟีเจอร์หลัก (Features)
 
 ### 1. ระบบจัดการโมเดลหลังบ้าน (Admin Dashboard)
@@ -65,18 +71,6 @@ project_aie322/
    ```
    เข้าไปที่ `http://127.0.0.1:5000/` (พอร์ตอาจจะเปลี่ยนเป็น 5001 หากเซิร์ฟเวอร์หลักรันอยู่)
 
----
 
-## 🌐 การนำขึ้นเซิร์ฟเวอร์จริง (Deployment)
 
-แนะนำให้ Deploy ผ่านบริการ Cloud ฟรี เช่น **Render** หรือ **Railway**
 
-### การตั้งค่าสำหรับ Render:
-1. นำโค้ดทั้งหมดขึ้น GitHub 
-2. สมัครใช้งาน [Render](https://render.com/) และสร้าง **Web Service** ใหม่
-3. เชื่อมต่อกับ Repository ใน GitHub ของคุณ
-4. ตั้งค่าดังนี้:
-   - **Environment:** `Python`
-   - **Build Command:** `pip install -r requirements.txt`
-   - **Start Command:** `gunicorn backend.app:app`
-5. รอให้ Render ทำการ Build และรับ URL ใช้งานจริงได้เลย!
