@@ -92,19 +92,21 @@
             <div class="w-10 h-10 rounded-xl bg-warm-bg flex items-center justify-center text-warm-orange text-xl">📤</div>
             <div>
               <h2 class="text-lg font-medium text-warm-textDark">อัปโหลด Model ใหม่</h2>
-              <p class="text-sm text-warm-text">รองรับไฟล์ .keras, .h5, .pkl, .pt</p>
+              <p class="text-sm text-warm-text">รองรับไฟล์ .keras, .h5, .joblib, .pkl, .pt, .pth</p>
             </div>
           </div>
 
           <div class="upload-zone relative rounded-2xl p-8 text-center cursor-pointer bg-white mb-4" id="uploadZone">
-            <input type="file" id="modelFile" accept=".keras,.h5,.pkl,.pt,.joblib" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer" onchange="handleFileSelect(event)">
+            <input type="file" id="modelFile" accept=".keras,.h5,.pkl,.pt,.pth,.joblib" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer" onchange="handleFileSelect(event)">
             <div class="text-4xl mb-3">📂</div>
             <h3 class="text-base font-medium text-warm-textDark mb-1">ลากไฟล์มาวางที่นี่ หรือคลิกเพื่อเลือก</h3>
             <p class="text-sm text-warm-text mb-4">เลือกไฟล์โมเดลที่ต้องการอัปโหลด</p>
             <div class="flex gap-2 justify-center flex-wrap">
               <span class="text-[11px] font-medium px-3 py-1 rounded-full bg-warm-bg text-warm-textDark tracking-wider">.KERAS</span>
               <span class="text-[11px] font-medium px-3 py-1 rounded-full bg-warm-bg text-warm-textDark tracking-wider">.H5</span>
+              <span class="text-[11px] font-medium px-3 py-1 rounded-full bg-warm-bg text-warm-textDark tracking-wider">.JOBLIB</span>
               <span class="text-[11px] font-medium px-3 py-1 rounded-full bg-warm-bg text-warm-textDark tracking-wider">.PKL</span>
+              <span class="text-[11px] font-medium px-3 py-1 rounded-full bg-warm-bg text-warm-textDark tracking-wider">.PT</span>
             </div>
           </div>
 
@@ -183,6 +185,7 @@
     // ─── State ───────────────────────────────
     let selectedFile = null;
     let models = [];
+    const allowedExtensions = ['keras', 'h5', 'joblib', 'pkl', 'pt', 'pth'];
 
     // ─── File Handling ────────────────────────
     function handleFileSelect(event) {
@@ -192,6 +195,13 @@
     }
 
     function setFile(file) {
+      const ext = file.name.split('.').pop().toLowerCase();
+      if (!allowedExtensions.includes(ext)) {
+        showToast('error', `ไฟล์ .${ext || '?'} ยังไม่รองรับ`);
+        removeFile();
+        return;
+      }
+
       selectedFile = file;
       document.getElementById('previewName').textContent = file.name;
       document.getElementById('previewSize').textContent = formatSize(file.size);
@@ -221,6 +231,15 @@
       if (bytes < 1024) return bytes + ' B';
       if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
       return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+    }
+
+    function escapeHtml(value) {
+      return String(value)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
     }
 
     // ─── Drag & Drop ──────────────────────────
@@ -263,7 +282,6 @@
         if (response.ok) {
           showToast('success', `อัปโหลด "${data.filename}" สำเร็จ! ระบบสลับโมเดลให้แล้ว`);
           await fetchModels();
-          resetAnalytics();
         } else {
           showToast('error', `เกิดข้อผิดพลาด: ${data.error}`);
         }
@@ -312,11 +330,13 @@
         updateCurrentModel(activeModelName);
         renderModelList();
         
-        // Show analytics section if we have an active model
+        // This page used to have an analytics section; keep the hook optional.
+        const analyticsSection = document.getElementById('analyticsSection');
+        if (!analyticsSection) return;
         if (models.length > 0) {
-          document.getElementById('analyticsSection').style.display = 'block';
+          analyticsSection.style.display = 'block';
         } else {
-          document.getElementById('analyticsSection').style.display = 'none';
+          analyticsSection.style.display = 'none';
         }
       } catch (e) {
         console.error("Failed to fetch models", e);
@@ -329,12 +349,18 @@
     }
 
     function resetAnalytics() {
-      document.getElementById('analyticsContent').style.display = 'none';
+      const analyticsContent = document.getElementById('analyticsContent');
+      if (analyticsContent) analyticsContent.style.display = 'none';
     }
 
     async function switchModel(id) {
       const model = models.find(m => m.id === id);
       if (!model) return;
+      if (model.active) return;
+      if (model.usable === false) {
+        showToast('error', 'ไฟล์นี้เป็นไฟล์ประกอบ ไม่ใช่โมเดลสำหรับทำนาย');
+        return;
+      }
       
       const oldActive = models.find(m => m.active);
       if(oldActive) oldActive.active = false;
@@ -389,6 +415,20 @@
       }
     }
 
+    function handleModelListClick(event) {
+      const actionEl = event.target.closest('[data-action]');
+      if (!actionEl || !document.getElementById('modelList').contains(actionEl)) return;
+
+      const model = models[Number(actionEl.dataset.index)];
+      if (!model) return;
+
+      if (actionEl.dataset.action === 'switch') {
+        switchModel(model.id);
+      } else if (actionEl.dataset.action === 'delete') {
+        deleteModel(model.id, model.name);
+      }
+    }
+
     function renderModelList() {
       const list = document.getElementById('modelList');
 
@@ -401,34 +441,44 @@
         return;
       }
 
-      list.innerHTML = models.map(m => `
-        <div class="model-item border border-warm-paper rounded-2xl p-4 flex items-center gap-4 bg-white cursor-pointer ${m.active ? 'active' : ''}" onclick="!event.target.closest('button') && switchModel('${m.id}')">
+      list.innerHTML = models.map((m, index) => {
+        const typeLabel = escapeHtml((m.type || 'model').toUpperCase());
+        const modelName = escapeHtml(m.name);
+        const modelSize = escapeHtml(m.size);
+        const modelDate = escapeHtml(m.date);
+
+        return `
+        <div class="model-item border border-warm-paper rounded-2xl p-4 flex items-center gap-4 bg-white ${m.usable === false ? 'cursor-default opacity-75' : 'cursor-pointer'} ${m.active ? 'active' : ''}" data-action="switch" data-index="${index}">
           <div class="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${m.active ? 'bg-warm-orange text-white' : 'bg-warm-bg text-warm-textDark'} transition-colors">
             ${m.active ? '✓' : '📦'}
           </div>
           <div class="flex-grow min-w-0">
-            <div class="font-medium text-sm text-warm-textDark truncate">${m.name}</div>
-            <div class="text-xs text-warm-text mt-0.5 flex gap-2">
-              <span>${m.size}</span> <span>·</span> <span>${m.date}</span>
+            <div class="font-medium text-sm text-warm-textDark truncate">${modelName}</div>
+            <div class="text-xs text-warm-text mt-0.5 flex gap-2 flex-wrap">
+              <span>${typeLabel}</span> <span>·</span> <span>${modelSize}</span> <span>·</span> <span>${modelDate}</span>
             </div>
           </div>
           <div class="shrink-0 flex items-center gap-2">
             ${m.active
               ? `<span class="text-[11px] font-medium px-3 py-1.5 rounded-full bg-warm-orange text-white tracking-wide shadow-sm">ใช้งานอยู่</span>`
-              : `<button class="text-xs font-medium px-4 py-1.5 rounded-full border border-warm-paper text-warm-text hover:border-warm-orange hover:text-warm-orange transition-colors" onclick="switchModel('${m.id}')">ใช้งาน</button>`
+              : m.usable === false
+                ? `<span class="text-[11px] font-medium px-3 py-1.5 rounded-full bg-warm-bg text-warm-text tracking-wide">ไฟล์ประกอบ</span>`
+                : `<button class="text-xs font-medium px-4 py-1.5 rounded-full border border-warm-paper text-warm-text hover:border-warm-orange hover:text-warm-orange transition-colors" data-action="switch" data-index="${index}">ใช้งาน</button>`
             }
-            <button class="text-warm-text hover:text-red-500 p-1.5 transition-colors" onclick="deleteModel('${m.id}', '${m.name}')" title="ลบ">
+            <button class="text-warm-text hover:text-red-500 p-1.5 transition-colors" data-action="delete" data-index="${index}" title="ลบ">
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
             </button>
           </div>
         </div>
-      `).join('');
+      `;
+      }).join('');
     }
 
 
 
 
     // ─── Init ─────────────────────────────────
+    document.getElementById('modelList').addEventListener('click', handleModelListClick);
     fetchModels();
   </script>
 </body>
